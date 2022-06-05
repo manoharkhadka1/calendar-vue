@@ -42,7 +42,7 @@ class EventController extends Controller
     public function store(EventRequest $request)
     {
         $requestData = $request->all();
-        $data = Event::updateOrCreate($requestData);
+        $data = Event::create($requestData);
 
         return response()->json([
             'success' => true,
@@ -80,9 +80,26 @@ class EventController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(EventRequest $request, $id)
     {
-        //
+        $event = Event::find($id);
+
+        if ($event) {
+            $event->note = $request->note;
+            if ($event->save()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => $event,
+                    'message' => 'Event updated successfully!'
+                ], 200);
+            }
+        }
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Event not found!'
+        ], 400);
+
     }
 
     /**

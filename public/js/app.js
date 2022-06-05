@@ -1966,6 +1966,18 @@ __webpack_require__.r(__webpack_exports__);
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 /* harmony default export */ __webpack_exports__["default"] = ({
   data: function data() {
     return {
@@ -1980,7 +1992,8 @@ __webpack_require__.r(__webpack_exports__);
         event_date: '',
         note: ''
       },
-      eventListings: []
+      eventListings: [],
+      updateForm: false
     };
   },
   mounted: function mounted() {
@@ -2026,9 +2039,20 @@ __webpack_require__.r(__webpack_exports__);
       console.log(this.weekDays);
     },
     eventClicked: function eventClicked(day) {
+      console.log("there");
       this.modalClass = 'custom-modal';
       this.dateSelected = day;
       this.event.event_date = this.$moment(day, "D.M.Y").format('Y-M-D');
+    },
+    updateEvent: function updateEvent(event) {
+      this.updateForm = true;
+      this.event = {
+        event_date: event.event_date,
+        note: event.note,
+        id: event.id
+      };
+      this.dateSelected = event.event_date;
+      this.modalClass = 'custom-modal';
     },
     nextClicked: function nextClicked(activeDay) {
       this.previousActive = false;
@@ -2056,18 +2080,34 @@ __webpack_require__.r(__webpack_exports__);
         console.log(err);
       });
     },
+    submitUpdateEvent: function submitUpdateEvent() {
+      var _this2 = this;
+
+      this.$http.put('/api/events/' + this.event.id, this.event).then(function (res) {
+        if (res.data.success) {
+          _this2.modalClass = 'custom-modal hidden';
+
+          _this2.clearModal();
+
+          _this2.getEvents();
+        }
+      }, function (err) {
+        console.log(err);
+      });
+    },
     clearModal: function clearModal() {
       this.event = {
         event_date: '',
         note: ''
       };
+      this.updateForm = false;
     },
     getEvents: function getEvents() {
-      var _this2 = this;
+      var _this3 = this;
 
       this.$http.get('/api/events', this.event).then(function (res) {
-        _this2.eventListings = res.data.data;
-        console.log(_this2.eventListings);
+        _this3.eventListings = res.data.data;
+        console.log(_this3.eventListings);
       }, function (err) {
         console.log(err);
       });
@@ -6492,7 +6532,7 @@ exports = module.exports = __webpack_require__(/*! ../../../node_modules/css-loa
 
 
 // module
-exports.push([module.i, "\ntd {\n    height: 400px;\n}\n.hidden {\n    display:none;\n}\n.custom-modal {\n    position: fixed;\n    z-index: 1;\n    left: 0;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    overflow: auto;\n    background-color: rgb(0,0,0);\n    background-color: rgba(0,0,0,0.4);\n}\n.custom-modal .content {\n    background-color: #fefefe;\n    margin: 15% auto;\n    padding: 20px;\n    border: 1px solid #888;\n    width: 50%;\n}\n.custom-modal .close {\n    color: #aaa;\n    float: right;\n    font-size: 28px;\n    font-weight: bold;\n}\n.custom-modal .close:hover,\n.custom-modal .close:focus {\n    color: black;\n    text-decoration: none;\n    cursor: pointer;\n}\n", ""]);
+exports.push([module.i, "\ntd {\n    height: 400px;\n}\n.hidden {\n    display:none;\n}\n.custom-modal {\n    position: fixed;\n    z-index: 1;\n    left: 0;\n    top: 0;\n    width: 100%;\n    height: 100%;\n    overflow: auto;\n    background-color: rgb(0,0,0);\n    background-color: rgba(0,0,0,0.4);\n}\n.custom-modal .content {\n    background-color: #fefefe;\n    margin: 15% auto;\n    padding: 20px;\n    border: 1px solid #888;\n    width: 50%;\n}\n.custom-modal .close {\n    color: #aaa;\n    float: right;\n    font-size: 28px;\n    font-weight: bold;\n}\n.custom-modal .close:hover,\n.custom-modal .close:focus {\n    color: black;\n    text-decoration: none;\n    cursor: pointer;\n}\n.event-container {\n    cursor: pointer;\n}\n", ""]);
 
 // exports
 
@@ -38406,7 +38446,9 @@ var render = function () {
                         _vm._v(
                           "\n                                " +
                             _vm._s(day) +
-                            "\n                            "
+                            " (" +
+                            _vm._s(_vm._f("moment")(day, "ddd")) +
+                            ")\n                            "
                         ),
                       ]
                     )
@@ -38426,29 +38468,44 @@ var render = function () {
                         staticClass: "calendar-cell",
                         on: {
                           click: function ($event) {
+                            if ($event.target !== $event.currentTarget) {
+                              return null
+                            }
                             return _vm.eventClicked(day)
                           },
                         },
                       },
                       _vm._l(_vm.eventListings, function (event) {
-                        return _c("span", { key: event.id }, [
-                          day === _vm.getMDYFormat(event.event_date)
-                            ? _c(
-                                "div",
-                                {
-                                  staticClass: "alert alert-primary",
-                                  attrs: { role: "alert" },
-                                },
-                                [
-                                  _vm._v(
-                                    "\n                                            " +
-                                      _vm._s(event.note) +
-                                      "\n                                        "
-                                  ),
-                                ]
-                              )
-                            : _vm._e(),
-                        ])
+                        return _c(
+                          "span",
+                          {
+                            key: event.id,
+                            staticClass: "event-container",
+                            on: {
+                              click: function ($event) {
+                                return _vm.updateEvent(event)
+                              },
+                            },
+                          },
+                          [
+                            day === _vm.getMDYFormat(event.event_date)
+                              ? _c(
+                                  "div",
+                                  {
+                                    staticClass: "alert alert-primary",
+                                    attrs: { role: "alert" },
+                                  },
+                                  [
+                                    _vm._v(
+                                      "\n                                            " +
+                                        _vm._s(event.note) +
+                                        "\n                                        "
+                                    ),
+                                  ]
+                                )
+                              : _vm._e(),
+                          ]
+                        )
                       }),
                       0
                     )
@@ -38463,74 +38520,143 @@ var render = function () {
     ]),
     _vm._v(" "),
     _c("div", { class: _vm.modalClass, attrs: { id: "myModal" } }, [
-      _c("div", { staticClass: "content" }, [
-        _c(
-          "span",
-          {
-            staticClass: "close",
-            on: {
-              click: function ($event) {
-                return _vm.closeModal()
+      _vm.updateForm
+        ? _c("div", { staticClass: "content" }, [
+            _c(
+              "span",
+              {
+                staticClass: "close",
+                on: {
+                  click: function ($event) {
+                    return _vm.closeModal()
+                  },
+                },
               },
-            },
-          },
-          [_vm._v("×")]
-        ),
-        _vm._v(" "),
-        _c("h4", [_vm._v("Add Event")]),
-        _vm._v(" "),
-        _c(
-          "form",
-          {
-            attrs: { action: "" },
-            on: {
-              submit: function ($event) {
-                $event.preventDefault()
-                return _vm.submitEvent.apply(null, arguments)
-              },
-            },
-          },
-          [
-            _c("p", [_vm._v("Date Selected: " + _vm._s(_vm.dateSelected))]),
+              [_vm._v("×")]
+            ),
             _vm._v(" "),
-            _c("textarea", {
-              directives: [
-                {
-                  name: "model",
-                  rawName: "v-model",
-                  value: _vm.event.note,
-                  expression: "event.note",
-                },
-              ],
-              staticClass: "form-control",
-              attrs: {
-                required: "",
-                rows: "2",
-                name: "note",
-                placeholder: "Enter Note",
-              },
-              domProps: { value: _vm.event.note },
-              on: {
-                input: function ($event) {
-                  if ($event.target.composing) {
-                    return
-                  }
-                  _vm.$set(_vm.event, "note", $event.target.value)
-                },
-              },
-            }),
+            _c("h4", [_vm._v("Update Event")]),
             _vm._v(" "),
             _c(
-              "button",
+              "form",
               {
-                staticClass: "btn btn-primary mt-2",
-                attrs: { type: "submit" },
+                attrs: { action: "" },
+                on: {
+                  submit: function ($event) {
+                    $event.preventDefault()
+                    return _vm.submitUpdateEvent.apply(null, arguments)
+                  },
+                },
               },
-              [_vm._v("Submit")]
+              [
+                _c("p", [_vm._v("Date Selected: " + _vm._s(_vm.dateSelected))]),
+                _vm._v(" "),
+                _c("textarea", {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.event.note,
+                      expression: "event.note",
+                    },
+                  ],
+                  staticClass: "form-control",
+                  attrs: {
+                    required: "",
+                    rows: "2",
+                    name: "note",
+                    placeholder: "Enter Note",
+                  },
+                  domProps: { value: _vm.event.note },
+                  on: {
+                    input: function ($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.$set(_vm.event, "note", $event.target.value)
+                    },
+                  },
+                }),
+                _vm._v(" "),
+                _c(
+                  "button",
+                  {
+                    staticClass: "btn btn-primary mt-2",
+                    attrs: { type: "submit" },
+                  },
+                  [_vm._v("Update")]
+                ),
+              ]
             ),
-          ]
-        ),
-      ]),
+          ])
+        : _c("div", { staticClass: "content" }, [
+            _c(
+              "span",
+              {
+                staticClass: "close",
+                on: {
+                  click: function ($event) {
+                    return _vm.closeModal()
+                  },
+                },
+              },
+              [_vm._v("×")]
+            ),
+            _vm._v(" "),
+            _c("h4", [_vm._v("Add Event")]),
+            _vm._v(" "),
+            _c(
+              "form",
+              {
+                attrs: { action: "" },
+                on: {
+                  submit: function ($event) {
+                    $event.preventDefault()
+                    return _vm.submitEvent.apply(null, arguments)
+                  },
+                },
+              },
+              [
+                _c("p", [_vm._v("Date Selected: " + _vm._s(_vm.dateSelected))]),
+                _vm._v(" "),
+                _c("textarea", {
+                  directives: [
+                    {
+                      name: "model",
+                      rawName: "v-model",
+                      value: _vm.event.note,
+                      expression: "event.note",
+                    },
+                  ],
+                  staticClass: "form-control",
+                  attrs: {
+                    required: "",
+                    rows: "2",
+                    name: "note",
+                    placeholder: "Enter Note",
+                  },
+                  domProps: { value: _vm.event.note },
+                  on: {
+                    input: function ($event) {
+                      if ($event.target.composing) {
+                        return
+                      }
+                      _vm.$set(_vm.event, "note", $event.target.value)
+                    },
+                  },
+                }),
+                _vm._v(" "),
+                _c(
+                  "button",
+                  {
+                    staticClass: "btn btn-primary mt-2",
+                    attrs: { type: "submit" },
+                  },
+                  [_vm._v("Submit")]
+                ),
+              ]
+            ),
+          ]),
     ]),
   ])
 }

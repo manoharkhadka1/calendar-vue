@@ -15,14 +15,14 @@
                             <thead>
                             <tr>
                                 <th class="calendar-cell" v-for="day in weekDays" :key="day">
-                                    {{ day }}
+                                    {{ day }} ({{ day | moment('ddd') }})
                                 </th>
                             </tr>
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td @click="eventClicked(day)" class="calendar-cell" v-for="day in weekDays" :key="day">
-                                        <span v-for="event in eventListings" :key="event.id">
+                                    <td @click.self="eventClicked(day)" class="calendar-cell" v-for="day in weekDays" :key="day">
+                                        <span @click="updateEvent(event)" v-for="event in eventListings" :key="event.id" class="event-container">
                                             <div class="alert alert-primary" role="alert" v-if="day === getMDYFormat(event.event_date)">
                                                 {{ event.note }}
                                             </div>
@@ -39,7 +39,19 @@
         <div id="myModal" :class="modalClass">
 
             <!-- Modal content -->
-            <div class="content">
+            <div class="content" v-if="updateForm">
+                <span @click="closeModal()" class="close">&times;</span>
+                <h4>Update Event</h4>
+                <form action=""  @submit.prevent="submitUpdateEvent">
+                    <p>Date Selected: {{ dateSelected }}</p>
+
+                    <textarea v-model="event.note" required class="form-control" rows="2" name="note" placeholder="Enter Note"></textarea>
+
+                    <button class="btn btn-primary mt-2" type="submit">Update</button>
+                </form>
+
+            </div>
+            <div class="content" v-else>
                 <span @click="closeModal()" class="close">&times;</span>
                 <h4>Add Event</h4>
                 <form action=""  @submit.prevent="submitEvent">
@@ -71,7 +83,8 @@ export default {
                 event_date:'',
                 note:''
             },
-            eventListings: []
+            eventListings: [],
+            updateForm: false
         }
     },
     mounted() {
@@ -123,9 +136,23 @@ export default {
 
         },
         eventClicked(day) {
+            console.log("there");
+
             this.modalClass = 'custom-modal';
             this.dateSelected = day;
             this.event.event_date = this.$moment(day, "D.M.Y").format('Y-M-D');
+
+        },
+        updateEvent(event) {
+            this.updateForm = true;
+            this.event=  {
+                event_date: event.event_date,
+                note:event.note,
+                id:event.id
+            };
+
+            this.dateSelected = event.event_date;
+            this.modalClass = 'custom-modal';
 
         },
         nextClicked(activeDay) {
@@ -150,11 +177,23 @@ export default {
                 console.log(err);
             });
         },
+        submitUpdateEvent() {
+            this.$http.put('/api/events/'+this.event.id, this.event).then(res => {
+                if (res.data.success) {
+                    this.modalClass = 'custom-modal hidden';
+                    this.clearModal();
+                    this.getEvents();
+                }
+            }, err => {
+                console.log(err);
+            });
+        },
         clearModal() {
             this.event = {
                 event_date:'',
                 note:''
             }
+            this.updateForm = false;
         },
         getEvents() {
             this.$http.get('/api/events', this.event).then(res => {
@@ -211,6 +250,10 @@ export default {
     .custom-modal .close:focus {
         color: black;
         text-decoration: none;
+        cursor: pointer;
+    }
+
+    .event-container {
         cursor: pointer;
     }
 </style>
